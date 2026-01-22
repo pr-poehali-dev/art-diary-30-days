@@ -273,7 +273,31 @@ const artists = [
   }
 ];
 
+import { useState, useEffect } from "react";
+import Icon from "@/components/ui/icon";
+
 export default function Index() {
+  const [unlockedDays, setUnlockedDays] = useState<number[]>(() => {
+    const saved = localStorage.getItem("unlockedDays");
+    return saved ? JSON.parse(saved) : [1];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("unlockedDays", JSON.stringify(unlockedDays));
+  }, [unlockedDays]);
+
+  const unlockDay = (day: number) => {
+    if (!unlockedDays.includes(day)) {
+      setUnlockedDays([...unlockedDays, day]);
+    }
+  };
+
+  const isUnlocked = (day: number) => unlockedDays.includes(day);
+  const canUnlock = (day: number) => {
+    if (day === 1) return true;
+    return unlockedDays.includes(day - 1);
+  };
+
   return (
     <div className="relative min-h-screen">
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-16 md:py-24">
@@ -308,43 +332,78 @@ export default function Index() {
         </section>
 
         <section className="space-y-16 md:space-y-20 mb-24">
-          {artists.map((artist) => (
-            <article
-              key={artist.day}
-              className={`border-t border-border pt-12 ${
-                artist.isSpecial ? "bg-muted/20 -mx-6 px-6 py-12" : ""
-              } ${artist.isFinal ? "bg-accent/5 -mx-6 px-6 py-12" : ""}`}
-            >
-              <div className="max-w-2xl mx-auto">
-                <div className="flex items-baseline gap-4 mb-4">
-                  <span className="text-5xl md:text-6xl font-light text-primary tracking-tight">
-                    {artist.day}
-                  </span>
-                  <h3 className="text-3xl md:text-4xl">{artist.name}</h3>
+          {artists.map((artist) => {
+            const locked = !isUnlocked(artist.day);
+            const canBeUnlocked = canUnlock(artist.day);
+
+            return (
+              <article
+                key={artist.day}
+                className={`border-t border-border pt-12 transition-all ${
+                  artist.isSpecial ? "bg-muted/20 -mx-6 px-6 py-12" : ""
+                } ${artist.isFinal ? "bg-accent/5 -mx-6 px-6 py-12" : ""} ${
+                  locked ? "opacity-50" : ""
+                }`}
+              >
+                <div className="max-w-2xl mx-auto">
+                  {locked ? (
+                    <div className="text-center py-12">
+                      <div className="flex items-baseline justify-center gap-4 mb-6">
+                        <span className="text-5xl md:text-6xl font-light text-primary tracking-tight">
+                          {artist.day}
+                        </span>
+                        <Icon name="Lock" size={32} className="opacity-60" />
+                      </div>
+                      <h3 className="text-2xl md:text-3xl mb-4 opacity-70">
+                        {artist.name}
+                      </h3>
+                      {canBeUnlocked ? (
+                        <button
+                          onClick={() => unlockDay(artist.day)}
+                          className="mt-4 px-8 py-3 bg-primary text-primary-foreground hover:opacity-90 transition-opacity text-lg"
+                        >
+                          Открыть день {artist.day}
+                        </button>
+                      ) : (
+                        <p className="text-lg opacity-60 mt-4">
+                          Откройте день {artist.day - 1} чтобы продолжить
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-4 mb-4">
+                        <span className="text-5xl md:text-6xl font-light text-primary tracking-tight">
+                          {artist.day}
+                        </span>
+                        <h3 className="text-3xl md:text-4xl">{artist.name}</h3>
+                      </div>
+
+                      {artist.volume !== "—" && (
+                        <p className="text-sm opacity-60 mb-6">
+                          Том {artist.volume}
+                        </p>
+                      )}
+
+                      <p className="text-xl md:text-2xl mb-6 italic opacity-90">
+                        {artist.phrase}
+                      </p>
+
+                      <p className="text-lg md:text-xl leading-relaxed mb-8 opacity-80">
+                        {artist.text}
+                      </p>
+
+                      <div className="border-l-2 border-primary pl-6 py-2">
+                        <p className="text-lg md:text-xl italic opacity-70">
+                          {artist.prediction}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
-
-                {artist.volume !== "—" && (
-                  <p className="text-sm opacity-60 mb-6">
-                    Том {artist.volume}
-                  </p>
-                )}
-
-                <p className="text-xl md:text-2xl mb-6 italic opacity-90">
-                  {artist.phrase}
-                </p>
-
-                <p className="text-lg md:text-xl leading-relaxed mb-8 opacity-80">
-                  {artist.text}
-                </p>
-
-                <div className="border-l-2 border-primary pl-6 py-2">
-                  <p className="text-lg md:text-xl italic opacity-70">
-                    {artist.prediction}
-                  </p>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </section>
 
         <footer className="text-center max-w-2xl mx-auto pt-16 border-t border-border">
